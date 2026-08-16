@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.2.0] - 2026-08-15
+
+### Changed
+
+- GFF JSON: Slightly improved conversion performance.
+
 ## [2.1.2] - 2025-08-17
 
 ### Changed
