@@ -14,11 +14,32 @@ requires "db_connector >= 0.1.0"
 installDirs = @["neverwinter"]
 
 binDir = "bin/"
-bin = listFiles(thisDir()).
-  mapIt(it.splitFile).
-  filterIt(it.name.startsWith("nwn_") and it.ext == ".nim").
-  mapIt(it.name)
-
+bin = @[
+  "nwn_asm",
+  "nwn_compressedbuf",
+  "nwn_erf",
+  "nwn_erf_tlkify",
+  "nwn_gff",
+  "nwn_key_pack",
+  "nwn_key_shadows",
+  "nwn_key_transparent",
+  "nwn_key_unpack",
+  "nwn_net",
+  "nwn_nwsync_fetch",
+  "nwn_nwsync_print",
+  "nwn_nwsync_prune",
+  "nwn_nwsync_write",
+  "nwn_resman_cat",
+  "nwn_resman_diff",
+  "nwn_resman_extract",
+  "nwn_resman_grep",
+  "nwn_resman_pkg",
+  "nwn_resman_stats",
+  "nwn_script_comp",
+  "nwn_ssf",
+  "nwn_tlk",
+  "nwn_twoda",
+]
 
 proc execEcho(cmd: string): void =
   echo "[exec] ", cmd
