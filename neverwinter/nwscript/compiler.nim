@@ -7,7 +7,7 @@ const cppFlags = "-std=c++14"
 {.compile("native/scriptcompfinalcode.cpp", cppFlags).}
 {.compile("compilerapi.cpp", cppFlags).}
 
-import std/[tables, strutils, logging, enumutils, setutils]
+import std/[strutils, logging, enumutils]
 
 import neverwinter/[resman, restype]
 
