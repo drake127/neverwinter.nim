@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.2] - 2025-08-17
+
+### Changed
+
+- scriptcomp: Experimental, breaking optimisations are now guarded behind -O3, and the default is now -O1.
+
 ## [2.1.1] - 2025-05-29
 
 ### Fixed
