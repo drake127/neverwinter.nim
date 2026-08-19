@@ -77,6 +77,11 @@ var currentCompileResults {.threadvar.}: CompileResult
 proc writeFileInMem(fn: cstring, resType: uint16, pData: ptr uint8, size: csize_t, bin: bool): int32 {.cdecl.} =
   # Builtin callback that will fill in currentCompileResults. Not meant to be exposed to user code.
   assert not isNil currentCompilerInstance
+  if size == 0:
+    # Some compilations (e.g. validation of entry-point-less scripts) produce
+    # no output at all; treat that as a successful no-op rather than writing
+    # an empty payload.
+    return 0
   var data = newString(size)
   copyMem(data[0].addr, pData, size)
   if resType == currentCompilerInstance.lang.bin.uint16:
@@ -218,3 +223,12 @@ proc scriptCompApiSetGenerateDebuggerOutput(instance: CScriptCompiler, state: ui
 
 proc setGenerateDebuggerOutput*(instance: ScriptCompiler, state: bool) =
   scriptCompApiSetGenerateDebuggerOutput(instance.compiler, if state: 1 else: 0)
+
+proc scriptCompApiSetRequireEntryPoint(instance: CScriptCompiler, state: uint32) {.importc.}
+
+proc setRequireEntryPoint*(instance: ScriptCompiler, required: bool) =
+  ## Set whether an entry point (void main or int StartingConditional) is required.
+  ## When set to false, scripts without an entry point can be compiled for validation
+  ## purposes: they are checked for syntax and semantic errors, but no code is generated.
+  ## This is useful for validating include files.
+  scriptCompApiSetRequireEntryPoint(instance.compiler, if required: 1 else: 0)

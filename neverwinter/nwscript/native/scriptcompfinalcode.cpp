@@ -68,6 +68,17 @@
 // Description: Clears out the user defined identifiers.
 ///////////////////////////////////////////////////////////////////////////////
 
+// Return value of CScriptCompiler::InstallLoader() used when the compiler has
+// been told (SetRequireEntryPoint(FALSE)) that an entry point is optional and
+// none was found in the script. The caller validates the parse tree but skips
+// code generation, producing no output file.
+//
+// This value is fully consumed inside GenerateFinalCodeFromParseTree() and must
+// never propagate out of CScriptCompiler::CompileFile(): the C API layer
+// (scriptCompApiCompileFile) reserves return codes 1 and -1 as "real error is in
+// GetCapturedError()" markers, so a leaked 1 would be misread as a compile error.
+#define CSCRIPTCOMPILER_VALIDATE_ONLY 1
+
 int32_t CScriptCompiler::GenerateFinalCodeFromParseTree(CExoString sFileName)
 {
 
@@ -84,6 +95,23 @@ int32_t CScriptCompiler::GenerateFinalCodeFromParseTree(CExoString sFileName)
 
 	int32_t nReturnValue = InstallLoader();
 	pNewReturnTree = InsertGlobalVariablesInParseTree(pReturnTree);
+
+	// InstallLoader returns CSCRIPTCOMPILER_VALIDATE_ONLY when no entry point is
+	// required and none was found. The file parsed successfully, so run the
+	// semantic pass to validate it, but discard any emitted code so that no
+	// output file is produced.
+	if (nReturnValue == CSCRIPTCOMPILER_VALIDATE_ONLY)
+	{
+		nReturnValue = WalkParseTree(pNewReturnTree);
+		if (nReturnValue < 0)
+		{
+			OutputWalkTreeError(nReturnValue, NULL);
+			return CleanUpAfterCompile(nReturnValue, pNewReturnTree);
+		}
+		m_nOutputCodeLength = 0;
+		return CleanUpAfterCompile(0, pNewReturnTree);
+	}
+
 	if (nReturnValue >= 0)
 	{
 		nReturnValue = WalkParseTree(pNewReturnTree);
@@ -207,6 +235,11 @@ void CScriptCompiler::FinalizeFinalCode()
 
 int32_t CScriptCompiler::WriteFinalCodeToFile(const CExoString &sFileName)
 {
+
+	if (m_nOutputCodeLength == 0)
+	{
+		return 0;
+	}
 
 	CExoString sModifiedFileName;
 	sModifiedFileName.Format("%s:%s",m_sOutputAlias.CStr(),sFileName.CStr());
@@ -499,7 +532,11 @@ int32_t CScriptCompiler::InstallLoader()
 			}
 			else
 			{
-				// Neither are present, so we're going to error just as
+				if (m_bRequireEntryPoint == FALSE)
+				{
+					return CSCRIPTCOMPILER_VALIDATE_ONLY;
+				}
+				// Otherwise we're going to error just as
 				// if we are expecting a void main() function!
 				m_bCompileConditionalFile = FALSE;
 			}
@@ -511,6 +548,10 @@ int32_t CScriptCompiler::InstallLoader()
 		nMainIdentifier = GetIdentifierByName("main");
 		if (nMainIdentifier < 0)
 		{
+			if (m_bRequireEntryPoint == FALSE)
+			{
+				return CSCRIPTCOMPILER_VALIDATE_ONLY;
+			}
 			return STRREF_CSCRIPTCOMPILER_ERROR_NO_FUNCTION_MAIN_IN_SCRIPT;
 		}
 
@@ -532,6 +573,10 @@ int32_t CScriptCompiler::InstallLoader()
 		nMainIdentifier = GetIdentifierByName("StartingConditional");
 		if (nMainIdentifier < 0)
 		{
+			if (m_bRequireEntryPoint == FALSE)
+			{
+				return CSCRIPTCOMPILER_VALIDATE_ONLY;
+			}
 			return STRREF_CSCRIPTCOMPILER_ERROR_NO_FUNCTION_INTSC_IN_SCRIPT;
 		}
 

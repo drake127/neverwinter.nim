@@ -249,6 +249,24 @@ public:
 	///////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////
+	void SetRequireEntryPoint(BOOL bValue);
+	//---------------------------------------------------------------------
+	// Desc.: This routine will set whether an entry point (void main or
+	//        int StartingConditional) is required for compilation.
+	//
+	// bValue:  (IN) A value to determine whether an entry point is required.
+	//
+	//          TRUE (default):  An entry point is required. Compilation
+	//              will fail if neither void main() nor
+	//              int StartingConditional() is present.
+	//
+	//          FALSE:  No entry point is required. Scripts without an entry
+	//              point are validated (syntax and semantics) but no code
+	//              is generated. Useful for validating include files.
+	//
+	///////////////////////////////////////////////////////////////////////
+
+	///////////////////////////////////////////////////////////////////////
 	int32_t CompileFile(const CExoString &sFileName);
 	//---------------------------------------------------------------------
 	// Desc.: This routine will generate whether the code in the file
@@ -485,6 +503,7 @@ private:
 	BOOL m_bCompileConditionalFile;
 	BOOL m_bOldCompileConditionalFile;
 	BOOL m_bCompileConditionalOrMain;
+	BOOL m_bRequireEntryPoint;
 	CExoString m_sLanguageSource;
 	CExoString m_sOutputAlias;
 	CExoString m_sGraphvizPath;

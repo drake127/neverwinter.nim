@@ -341,6 +341,7 @@ CScriptCompiler::CScriptCompiler(RESTYPE nSource, RESTYPE nCompiled, RESTYPE nDe
 	m_bCompileConditionalFile = FALSE;
 	m_bOldCompileConditionalFile = FALSE;
 	m_bCompileConditionalOrMain = FALSE;
+	m_bRequireEntryPoint = TRUE;
 	m_bAutomaticCleanUpAfterCompiles = TRUE;
 
 	m_nNumEngineDefinedStructures = 0;
@@ -1144,6 +1145,14 @@ void CScriptCompiler::SetCompileConditionalFile(BOOL bValue)
 void CScriptCompiler::SetCompileConditionalOrMain(BOOL bValue)
 {
 	m_bCompileConditionalOrMain = bValue;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  CScriptCompiler::SetRequireEntryPoint()
+///////////////////////////////////////////////////////////////////////////////
+void CScriptCompiler::SetRequireEntryPoint(BOOL bValue)
+{
+	m_bRequireEntryPoint = bValue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -73,6 +73,11 @@ extern "C" void scriptCompApiSetGenerateDebuggerOutput(CScriptCompiler* instance
     instance->SetGenerateDebuggerOutput(state);
 }
 
+extern "C" void scriptCompApiSetRequireEntryPoint(CScriptCompiler* instance, bool state)
+{
+    instance->SetRequireEntryPoint(state);
+}
+
 extern "C" void scriptCompApiDestroyCompiler(CScriptCompiler* instance)
 {
     delete instance;
