@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.0] - 2026-08-20
+
+### Added
+
+- scriptcomp: Added `--no-require-entry-point` to enable syntax and semantic checks for include files (thanks, @cgtudor).
+
+### Fixed
+
+- TLS init should be more robust, no longer print duplicate log output.
+- Replaced the deprecated std/threadpool with the recommended taskpools lib.
+
 ## [2.2.0] - 2026-08-15
 
 ### Changed
