@@ -1,4 +1,6 @@
-import std/[tables, threadpool, cpuinfo, atomics, strutils, sequtils, monotimes]
+import std/[tables, cpuinfo, atomics, strutils, sequtils, monotimes]
+
+import taskpools
 
 import shared
 import neverwinter/nwscript/compiler
@@ -79,25 +81,29 @@ type
     requireEntryPoint: bool
 
   GlobalState = object
-    successes, errors, skips: Atomic[uint]
     args: OptArgs  # readonly
     params: Params # readonly
 
   RMSearchPathEntry = (PathComponent, string)
 
-  # Object holding all state each individual thread needs.
+  # Object holding all state each individual worker thread needs.
   # Accessible only via getThreadState(), which also does
-  # first-time init for threadpool threads.
+  # first-time init for pool worker threads.
   ThreadState = ref object
     chDemandResRefResponse: Channel[string]
     currentRMSearchPath: seq[RMSearchPathEntry]
     cNSS: ScriptCompiler
 
 # =================
-# Global state is used on the main thread.
-# We also initialise the thread pool and other global properties here.
+# Global state is used on the main thread; the task pool is created per run
+# in compileAll().
 
-var globalState: GlobalState
+var
+  globalState: GlobalState
+  # Counters updated by worker threads; gAborted stops the queue on error.
+  gSuccesses, gErrors, gSkips: Atomic[uint]
+  gAborted: Atomic[bool]
+
 globalState.args = DOC(ArgsHelp)
 globalState.params = Params(
   langSpec: LangSpec (
@@ -129,13 +135,10 @@ if globalState.params.outDirectory != "" and not dirExists(globalState.params.ou
   fatal "Directory given in -d must exist."
   quit(1)
 
-setMinPoolSize 1
-setMaxPoolSize globalState.params.parallel
-
 proc getThreadState(): ThreadState {.gcsafe.}
 
-# This will be referenced via untracked pointer on all other worker threads.
-# This is OK to do because globalState.params is entirely readonly and will outlive
+# These will be referenced via untracked pointers on all other worker threads.
+# This is OK to do because globalState is entirely readonly and will outlive
 # all other threads.
 let params: ptr Params = globalState.params.addr
 let argsPtr: ptr OptArgs = globalState.args.addr
@@ -216,6 +219,10 @@ proc getThreadState(): ThreadState {.gcsafe.} =
   state
 
 proc doCompile(num, total: Positive, p: string, overrideOutPath: string = "") {.gcsafe.} =
+  # After an error that aborts the run, skip files that have not started yet.
+  if gAborted.load:
+    return
+
   let parts = splitFile(absolutePath(p))
   doAssert(parts.dir != "")
   let outParts = if overrideOutPath != "": splitFile(absolutePath(overrideOutPath)) else: parts
@@ -245,44 +252,47 @@ proc doCompile(num, total: Positive, p: string, overrideOutPath: string = "") {.
       if ms == 0: " [<0ms]"
       else: " [" & $ms & "ms]"
 
-    # This cast is here only to access globalState.
-    # We know the atomics are threadsafe to touch, and so is logging.
-    {.cast(gcsafe).}:
-      let prefix = format("[$#/$#] $#: ", num, total, p)
-      case ret.code
-      of 0:
-        proc writeData(fn, data: string) =
-          if data == "": return
-          elif params.simulate: debug "[simulate] Would write file: ", fn
-          else: writeFile(fn, data)
+    let prefix = format("[$#/$#] $#: ", num, total, p)
+    case ret.code
+    of 0:
+      proc writeData(fn, data: string) =
+        if data == "": return
+        elif params.simulate: debug "[simulate] Would write file: ", fn
+        else: writeFile(fn, data)
 
-        atomicInc globalState.successes
-        writeData(outFilePrefix & "." & getResExt(params.langSpec.bin), ret.bytecode)
-        writeData(outFilePrefix & "." & getResExt(params.langSpec.dbg), ret.debugcode)
+      atomicInc gSuccesses
+      writeData(outFilePrefix & "." & getResExt(params.langSpec.bin), ret.bytecode)
+      writeData(outFilePrefix & "." & getResExt(params.langSpec.dbg), ret.debugcode)
 
-        if ret.bytecode == "" and ret.debugcode == "":
-          # Validation-only compile (no entry point present): nothing was generated.
-          debug prefix, "Success (validated, no entry point)", timingPostfix()
-        else:
-          debug prefix, "Success", timingPostfix()
-
-      of 623:
-        atomicInc globalState.skips
-        debug prefix, "no main (include?)", timingPostfix()
+      if ret.bytecode == "" and ret.debugcode == "":
+        # Validation-only compile (no entry point present): nothing was generated.
+        debug prefix, "Success (validated, no entry point)", timingPostfix()
       else:
-        atomicInc globalState.errors
-        if params.continueOnError:
-          error prefix, ret.str, timingPostfix()
-        else:
-          fatal prefix, ret.str, timingPostfix()
-          # This might not be so safe in conjunction with the threadpool being loaded
-          # We'll see if it starts crashing ..
-          quit(1)
+        debug prefix, "Success", timingPostfix()
+
+    of 623:
+      atomicInc gSkips
+      debug prefix, "no main (include?)", timingPostfix()
+    else:
+      atomicInc gErrors
+      if params.continueOnError:
+        error prefix, ret.str, timingPostfix()
+      else:
+        fatal prefix, ret.str, timingPostfix()
+        # Stop scheduling further files; tasks already in flight run to completion.
+        gAborted.store(true)
 
   else: discard
 
-# =================
-# Global mainloop. This queues up all files to be compiled onto the threadpool.
+proc doCompileTask(num, total: Positive, p: string, overrideOutPath: string) {.gcsafe, raises: [].} =
+  ## Task-pool entry point: exceptions must not escape a pool task, so surface
+  ## them as a counted error instead.
+  try:
+    doCompile(num, total, p, overrideOutPath)
+  except Exception as e:
+    atomicInc gErrors
+    gAborted.store(true)
+    echo "Exception while compiling ", p, ": ", e.msg
 
 proc canCompileFile(path: string): bool =
   # Never compile language spec files
@@ -310,31 +320,47 @@ proc collect(into: var seq[string], path: string) =
     fatal path,  ": Does not exist"
     quit(1)
 
-if globalState.args["<spec>"]:
-  var queue: seq[string]
-  for fn in globalState.args["<spec>"]:
-    collect(queue, fn)
+# =================
+# Global mainloop. Queues up all files to be compiled onto the task pool, then
+# waits for the pool to become idle.
 
-  queue = queue.deduplicate
+proc compileAll(queue: seq[string], overrideOutPath: string = "") =
+  if queue.len == 0:
+    return
 
-  let queueLen = queue.len
+  var pool = Taskpool.new(numThreads = globalState.params.parallel)
   for idx, q in queue:
-    spawn doCompile(idx+1, queueLen, q)
+    pool.spawn doCompileTask(idx+1, queue.len, q, overrideOutPath)
 
-elif globalState.args["<file>"]:
-  let file = $globalState.args["<file>"]
-  if not canCompileFile file:
-    fatal file, ": Don't know how to compile or does not exist"
-  spawn doCompile(1, 1, file, if globalState.args["-o"]: $globalState.args["-o"] else: "")
+  # Barrier: wait for all tasks, then release the pool.
+  pool.syncAll()
+  pool.shutdown()
 
-else:
-  doAssert(false)
+proc main() =
+  if globalState.args["<spec>"]:
+    var queue: seq[string]
+    for fn in globalState.args["<spec>"]:
+      collect(queue, fn)
 
-# Barrier to wait for threadpool to become idle.
-sync()
+    queue = queue.deduplicate
 
-info format("$# successful, $# skipped, $# errored",
-  globalState.successes.load, globalState.skips.load, globalState.errors.load)
+    compileAll(queue)
 
-if globalState.errors.load > 0:
-  quit(1)
+  elif globalState.args["<file>"]:
+    let file = $globalState.args["<file>"]
+    if not canCompileFile file:
+      fatal file, ": Don't know how to compile or does not exist"
+      quit(1)
+
+    compileAll(@[file], if globalState.args["-o"]: $globalState.args["-o"] else: "")
+
+  else:
+    doAssert(false)
+
+  info format("$# successful, $# skipped, $# errored",
+    gSuccesses.load, gSkips.load, gErrors.load)
+
+  if gErrors.load > 0:
+    quit(1)
+
+main()

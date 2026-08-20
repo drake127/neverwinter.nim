@@ -1,58 +1,101 @@
 {
   "version": 2,
   "packages": {
-    "checksums": {
-      "version": "0.2.1",
-      "vcsRevision": "f8f6bd34bfa3fe12c64b919059ad856a96efcba0",
-      "url": "https://github.com/nim-lang/checksums",
+    "nim": {
+      "version": "2.2.10",
+      "vcsRevision": "9fe2137fa2f3f66cf5a44f357d461829ac9e20c4",
+      "url": "https://github.com/nim-lang/Nim.git",
       "downloadMethod": "git",
       "dependencies": [],
       "checksums": {
-        "sha1": "d3c7a1d0c0dee8fa089bd7f4d474e005877b608a"
+        "sha1": "17ec440fdb89f8903db29a17898af590087d2b64"
+      }
+    },
+    "unittest2": {
+      "version": "0.2.5",
+      "vcsRevision": "26f2ef3ae0ec72a2a75bfe557e02e88f6a31c189",
+      "url": "https://github.com/status-im/nim-unittest2",
+      "downloadMethod": "git",
+      "dependencies": [
+        "nim"
+      ],
+      "checksums": {
+        "sha1": "02bb3751ba9ddc3c17bfd89f2e41cb6bfb8fc0c9"
+      }
+    },
+    "taskpools": {
+      "version": "0.2.1",
+      "vcsRevision": "7d96007793fdb2d244d392eb7c5cfa4a695d4ecc",
+      "url": "https://github.com/status-im/nim-taskpools",
+      "downloadMethod": "git",
+      "dependencies": [
+        "nim",
+        "unittest2"
+      ],
+      "checksums": {
+        "sha1": "4b113319a3145f22a9e51eaf7f89600f6741b88b"
       }
     },
     "db_connector": {
       "version": "0.1.0",
-      "vcsRevision": "e65693709dd042bc723c8f1d46cc528701f1c479",
+      "vcsRevision": "29450a2063970712422e1ab857695c12d80112a6",
       "url": "https://github.com/nim-lang/db_connector",
       "downloadMethod": "git",
-      "dependencies": [],
+      "dependencies": [
+        "nim"
+      ],
       "checksums": {
-        "sha1": "05c335ec678614b973d8a80651971e0719045d14"
+        "sha1": "4f2e67d0e4b61af9ac5575509305660b473f01a4"
+      }
+    },
+    "checksums": {
+      "version": "0.2.2",
+      "vcsRevision": "0845c735a9746188b2257ee2cff672eb6ec26e8a",
+      "url": "https://github.com/nim-lang/checksums",
+      "downloadMethod": "git",
+      "dependencies": [
+        "nim"
+      ],
+      "checksums": {
+        "sha1": "6357ab195ec23e0e0a54d4d8b5e0212456bf899e"
       }
     },
     "unicodedb": {
-      "version": "0.12.0",
-      "vcsRevision": "b055310c08db8f879057b4fec15c8301ee93bb2a",
+      "version": "0.13.2",
+      "vcsRevision": "66f2458710dc641dd4640368f9483c8a0ec70561",
       "url": "https://github.com/nitely/nim-unicodedb",
       "downloadMethod": "git",
-      "dependencies": [],
+      "dependencies": [
+        "nim"
+      ],
       "checksums": {
-        "sha1": "4452416471e2fe8726eb6070ed6ea7368171cc09"
+        "sha1": "739102d885d99bb4571b1955f5f12aee423c935b"
       }
     },
     "regex": {
-      "version": "0.20.2",
-      "vcsRevision": "1f21ff2069c5d58aa3f326aa7b2ea458cf0a50cf",
+      "version": "0.26.3",
+      "vcsRevision": "4593305ed1e49731fc75af1dc572dd2559aad19c",
       "url": "https://github.com/nitely/nim-regex",
       "downloadMethod": "git",
       "dependencies": [
+        "nim",
         "unicodedb"
       ],
       "checksums": {
-        "sha1": "f376a11f34d2dfbfd18abdd31e6379e3cf2e7c6d"
+        "sha1": "4d24e7d7441137cd202e16f2359a5807ddbdc31f"
       }
     },
     "docopt": {
-      "version": "0.7.0",
-      "vcsRevision": "d2ad95f4f95bae7d41493afa7a95c8aaab10b630",
+      "version": "0.7.1",
+      "vcsRevision": "efaa112b6df172a9168c4eb581ab8dda1fbcfe2a",
       "url": "https://github.com/docopt/docopt.nim",
       "downloadMethod": "git",
       "dependencies": [
+        "nim",
         "regex"
       ],
       "checksums": {
-        "sha1": "60fda67c990733c58ca227a09277c8e8e9dbfa70"
+        "sha1": "387f1ae17f3b7620c7814cf44a52d3d91b8906e9"
       }
     }
   },
