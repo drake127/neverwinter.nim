@@ -138,6 +138,7 @@ proc getThreadState(): ThreadState {.gcsafe.}
 # This is OK to do because globalState.params is entirely readonly and will outlive
 # all other threads.
 let params: ptr Params = globalState.params.addr
+let argsPtr: ptr OptArgs = globalState.args.addr
 
 # =================
 # ResMan: We have one global resman instance on a worker thread. It reads requests
@@ -177,9 +178,7 @@ chDemandResRef.open()
 
 var demandResRefThread: Thread[void]
 createThread(demandResRefThread) do ():
-  # TODO: Make shared init less sucky. We need to call this here to set up args (again)
-  #       so newBasicResMan can refer to it.
-  discard DOC(ArgsHelp, false)
+  initThreadTLS(argsPtr[])
 
   let rm = newBasicResMan()
 
@@ -208,9 +207,8 @@ var state {.threadvar.}: ThreadState
 proc getThreadState(): ThreadState {.gcsafe.} =
   if isNil state:
     new(state)
-    # TODO: make shared init less sucky. We need to init this here because workers
-    #       will depend on logging and related to be set up.
-    discard DOC(ArgsHelp, false)
+    # Workers need per-thread state (args, logging, encodings) set up first.
+    initThreadTLS(argsPtr[])
     state.chDemandResRefResponse.open(maxItems=1)
     state.cNSS = newCompiler(params.langSpec, params.debugSymbols, resolveFile, params.maxIncludeDepth, params.graphvizOut)
     state.cNSS.setOptimizations(params.optFlags)

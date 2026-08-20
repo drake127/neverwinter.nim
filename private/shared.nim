@@ -65,18 +65,12 @@ type OptArgs* = Table[string, docopt_internal.Value]
 
 var Args {.threadvar.}: OptArgs
 
-proc DOC*(body: string, mainThread = true): OptArgs =
-  let body2 = body.replace("$USAGE", GlobalUsage).
-                   replace("$0", getAppFilename().extractFilename()).
-                   replace("$OPTRESMAN", getResmanOpts()).
-                   replace("$OPT", getGlobalOpts())
-
-  result = docopt_internal.docopt(body2)
-  Args = result
-
-  if Args["--version"]:
-    printVersion()
-    quit()
+proc initThreadTLS*(args: OptArgs) =
+  ## Sets up the per-thread state (parsed args, logging, encodings, custom
+  ## restypes) that any thread needs before using the shared helpers.
+  ## Called by DOC() on the main thread, and once per worker thread before
+  ## it starts doing work.
+  Args = args
 
   if Args.hasKey("--verbose") and Args["--verbose"]: setLogFilter(lvlDebug)
   elif Args.hasKey("--quiet") and Args["--quiet"]: setLogFilter(lvlError)
@@ -88,10 +82,6 @@ proc DOC*(body: string, mainThread = true): OptArgs =
 
   setNwnEncoding($Args["--nwn-encoding"])
   setNativeEncoding($Args["--other-encoding"])
-
-  if mainThread:
-    debug("NWN file encoding: " & getNwnEncoding())
-    debug("Other file encoding: " & getNativeEncoding())
 
   if Args.hasKey("--add-restypes") and Args["--add-restypes"]:
     let types = ($Args["--add-restypes"]).split(",").mapIt(it.split(":"))
@@ -107,6 +97,24 @@ proc DOC*(body: string, mainThread = true): OptArgs =
 
       registerCustomResType(ResType rt, ext)
       debug "Registering custom ResType ", ext, " -> ", rt
+
+proc DOC*(body: string): OptArgs =
+  ## Parses the command line and initializes main-thread TLS.
+  let body2 = body.replace("$USAGE", GlobalUsage).
+                   replace("$0", getAppFilename().extractFilename()).
+                   replace("$OPTRESMAN", getResmanOpts()).
+                   replace("$OPT", getGlobalOpts())
+
+  result = docopt_internal.docopt(body2)
+
+  if result["--version"]:
+    printVersion()
+    quit()
+
+  initThreadTLS(result)
+
+  debug("NWN file encoding: " & getNwnEncoding())
+  debug("Other file encoding: " & getNativeEncoding())
 
 proc newBasicResMan*(
     root = findNwnRoot(if Args["--root"]: $Args["--root"] else: ""),
