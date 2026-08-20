@@ -6,7 +6,7 @@ on:
       - '*'
 
 env:
-    NIMVER:  "2.2.4"
+    NIMVER:  "2.2.10"
     ZIGVER:  "0.14.1"
 
 jobs:
