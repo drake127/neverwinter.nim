@@ -78,7 +78,12 @@ proc initThreadTLS*(args: OptArgs) =
   else: setLogFilter(lvlInfo)
 
   when not defined(nwnNoSharedLogger):
-    addHandler newFileLogger(stderr, fmtStr = "$levelid [$datetime] ")
+    # Log handlers are thread-local. Only install the stderr logger the first
+    # time a thread initialises its TLS, so a thread that runs a task as well
+    # as driving the pool (e.g. the task pool's root thread) does not duplicate
+    # its log output.
+    if getHandlers().len == 0:
+      addHandler newFileLogger(stderr, fmtStr = "$levelid [$datetime] ")
 
   setNwnEncoding($Args["--nwn-encoding"])
   setNativeEncoding($Args["--other-encoding"])
