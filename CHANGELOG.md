@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.1] - 2026-08-25
+
+### Fixed
+
+- scriptcomp: Fixed `StartConditional`/`main` confusion when compiling include files.
+- scriptcomp: Function implementations whose return type doesn't match their prototype are now rejected.
+- scriptcomp: Fixed a crash (SIGFPE) on division by zero for compile time consts.
+- scriptcomp: Empty `for` loop bodies are now allowed.
+- scriptcomp: Semantic errors are now reported even for scripts without an entry point.
+- scriptcomp: No longer crashes on constant negation of a string (e.g. `!"foo"`).
+- scriptcomp: Reports the actual invalid function name instead of a bracket error.
+
 ## [2.3.0] - 2026-08-20
 
 ### Added
