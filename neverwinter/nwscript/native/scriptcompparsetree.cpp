@@ -4420,6 +4420,7 @@ int32_t CScriptCompiler::AddUserDefinedIdentifier(CScriptParseTreeNode *pFunctio
 				if (m_pcIdentifierList[nIdentifierIndex].m_nParameters == m_pcIdentifierList[m_nOccupiedIdentifiers].m_nParameters)
 				{
 					BOOL bParameterListDifferent = FALSE;
+					BOOL bReturnTypeDifferent = FALSE;
 
 					int32_t count2;
 					for (count2 = 0; count2 < m_pcIdentifierList[nIdentifierIndex].m_nParameters; count2++)
@@ -4432,7 +4433,20 @@ int32_t CScriptCompiler::AddUserDefinedIdentifier(CScriptParseTreeNode *pFunctio
 						}
 					}
 
-					if (bParameterListDifferent == FALSE)
+					// The return type is part of the signature as well. Merging a
+					// declaration and implementation that differ only in return
+					// type keeps the declaration's type at the call site (no stack
+					// slot reserved for a non-void result) while the implementation
+					// still pushes its return value, yielding bytecode that
+					// unbalances the VM stack at run-time.
+					if (m_pcIdentifierList[nIdentifierIndex].m_nReturnType != m_pcIdentifierList[m_nOccupiedIdentifiers].m_nReturnType ||
+					        (m_pcIdentifierList[nIdentifierIndex].m_nReturnType == CSCRIPTCOMPILER_TOKEN_STRUCTURE_IDENTIFIER &&
+					         m_pcIdentifierList[nIdentifierIndex].m_psStructureReturnName != m_pcIdentifierList[m_nOccupiedIdentifiers].m_psStructureReturnName))
+					{
+						bReturnTypeDifferent = TRUE;
+					}
+
+					if (bParameterListDifferent == FALSE && bReturnTypeDifferent == FALSE)
 					{
 						bFoundIdenticalFunction = TRUE;
 						if (bFunctionImplementation == TRUE)
