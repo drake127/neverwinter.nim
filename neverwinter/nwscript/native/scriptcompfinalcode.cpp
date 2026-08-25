@@ -118,6 +118,17 @@ int32_t CScriptCompiler::GenerateFinalCodeFromParseTree(CExoString sFileName)
 	}
 	else
 	{
+		// InstallLoader() rejected this script (typically because it has no
+		// entry point). The script still parsed successfully, so run the
+		// semantic validation pass regardless: otherwise, errors inside
+		// entry-point-less ("include-style") scripts would go unreported
+		// and the file would be silently skipped. If validation finds an
+		// error, report that; otherwise keep the loader's error.
+		int32_t nValidationResult = WalkParseTree(pNewReturnTree);
+		if (nValidationResult < 0)
+		{
+			nReturnValue = nValidationResult;
+		}
 		OutputWalkTreeError(nReturnValue, NULL);
 	}
 

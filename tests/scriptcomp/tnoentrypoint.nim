@@ -3,8 +3,9 @@
 # * With requireEntryPoint=false, scripts without an entry point can be
 #   compiled for validation. They must still undergo the full semantic pass
 #   (so genuine errors are reported), and no output code may be produced.
-# * With requireEntryPoint=true (the default), the pre-existing behavior is
-#   unchanged: an entry-point-less script reports the "no main" error.
+# * With requireEntryPoint=true (the default), an entry-point-less script
+#   reports the "no main" error if it is semantically valid, but semantic
+#   errors inside it are still reported (issue #122).
 
 import std/[os, strutils, logging]
 import neverwinter/nwscript/compiler
@@ -36,10 +37,12 @@ proc check(file: string, requireEntryPoint: bool, expectCode: int32; expectBytec
 # 623 = STRREF_CSCRIPTCOMPILER_ERROR_NO_FUNCTION_MAIN_IN_SCRIPT (negated)
 # 587 = STRREF_CSCRIPTCOMPILER_ERROR_DECLARATION_DOES_NOT_MATCH_PARAMETERS (negated)
 
-check "nomain_valid", false,  0,   false   # validates, nothing generated
-check "nomain_valid", true,   623, false   # default behavior unchanged
-check "nomain_badsem", false, 587, false   # semantic errors still caught
-check "nomain_badsem", true,  623, false   # default behavior unchanged
-check "simple",             false,  0,   true    # entry point present: code generated
-check "startingcond",       false,  0,   true    # entry point present: code generated
-check "neg_badparams",      false,  587, false   # semantics still checked w/ entry point
+check "nomain_valid",   false, 0,   false   # validates, nothing generated
+check "nomain_valid",   true,  623, false   # no main, but semantic pass runs clean
+check "nomain_badsem",  false, 587, false   # semantic errors still caught
+check "nomain_badsem",  true,  587, false   # no main, but semantic errors reported (issue #122)
+check "nomain_mismatch", false, 618,  false  # type mismatch caught w/o entry point required
+check "nomain_mismatch", true,  618,  false  # type mismatch caught even in default mode (issue #122)
+check "simple",         false, 0,   true    # entry point present: code generated
+check "startingcond",   false, 0,   true    # entry point present: code generated
+check "neg_badparams",  false, 587, false   # semantics still checked w/ entry point
