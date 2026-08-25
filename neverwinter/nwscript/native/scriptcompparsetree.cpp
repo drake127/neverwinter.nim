@@ -60,6 +60,34 @@
 
 //::///////////////////////////////////////////////////////////////////////////
 //::
+//::  UnwrapConditionNode()
+//::
+//::  Peel off the wrapper nodes that the expression grammars put around a
+//::  parsed condition: OPERATION_INTEGER_EXPRESSION and
+//::  OPERATION_NON_VOID_EXPRESSION wrap the actual expression, and unary
+//::  operator nodes keep their single operand on pLeft.  Returns the
+//::  underlying expression node, or NULL if pNode is NULL.
+//::///////////////////////////////////////////////////////////////////////////
+
+static CScriptParseTreeNode *UnwrapConditionNode(CScriptParseTreeNode *pNode)
+{
+	while (pNode != NULL &&
+	       (pNode->nOperation == CSCRIPTCOMPILER_OPERATION_INTEGER_EXPRESSION ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_NON_VOID_EXPRESSION ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_BOOLEAN_NOT ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_NEGATION ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_ONES_COMPLEMENT ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_PRE_INCREMENT ||
+	        pNode->nOperation == CSCRIPTCOMPILER_OPERATION_PRE_DECREMENT))
+	{
+		pNode = pNode->pLeft;
+	}
+	return pNode;
+}
+
+
+//::///////////////////////////////////////////////////////////////////////////
+//::
 //::  Class CScriptCompiler
 //::
 //::///////////////////////////////////////////////////////////////////////////
@@ -2537,6 +2565,20 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						// A `(` directly after a bare identifier term is always a call
+						// attempt in NWScript; known functions are parsed as calls
+						// upstream, so reaching this point with a VARIABLE means the
+						// call target isn't a known function (undefined identifier, or
+						// a non-function used as a call target).
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_RIGHT_BRACKET_ON_EXPRESSION);
 				}
 			}
@@ -2645,6 +2687,15 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_RIGHT_BRACKET_ON_EXPRESSION);
 				}
 			}
@@ -2716,16 +2767,11 @@ int32_t CScriptCompiler::GenerateParseTree()
 				{
 					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
 					{
-						if (pTopStackReturnNode != NULL)
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
 						{
-							if (pTopStackReturnNode->pLeft != NULL)
-							{
-								if (pTopStackReturnNode->pLeft->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
-								{
-									m_sUndefinedIdentifier = *(pTopStackReturnNode->pLeft->m_psStringData);
-									PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
-								}
-							}
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
 						}
 					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_RIGHT_BRACKET_ON_EXPRESSION);
@@ -2818,6 +2864,15 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_RIGHT_BRACKET_ON_EXPRESSION);
 				}
 			}
@@ -2881,6 +2936,15 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_SEMICOLON_AFTER_EXPRESSION);
 				}
 			}
@@ -2915,6 +2979,15 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_SEMICOLON_AFTER_EXPRESSION);
 				}
 			}
@@ -2941,6 +3014,15 @@ int32_t CScriptCompiler::GenerateParseTree()
 				}
 				else
 				{
+					if (m_nTokenStatus == CSCRIPTCOMPILER_TOKEN_LEFT_BRACKET)
+					{
+						CScriptParseTreeNode *pCondition = UnwrapConditionNode(pTopStackReturnNode);
+						if (pCondition != NULL && pCondition->nOperation == CSCRIPTCOMPILER_OPERATION_VARIABLE)
+						{
+							m_sUndefinedIdentifier = *(pCondition->m_psStringData);
+							PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER);
+						}
+					}
 					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_NO_SEMICOLON_AFTER_EXPRESSION);
 				}
 			}
