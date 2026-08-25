@@ -1658,8 +1658,22 @@ BOOL CScriptCompiler::ConstantFoldNode(CScriptParseTreeNode *pNode)
 			case CSCRIPTCOMPILER_OPERATION_ADD:                 result = left +  right; break;
 			case CSCRIPTCOMPILER_OPERATION_SUBTRACT:            result = left -  right; break;
 			case CSCRIPTCOMPILER_OPERATION_MULTIPLY:            result = left *  right; break;
-			case CSCRIPTCOMPILER_OPERATION_DIVIDE:              result = left /  right; break;
-			case CSCRIPTCOMPILER_OPERATION_MODULUS:             result = left %  right; break;
+			// Division and modulo must not be evaluated here when the divisor is
+			// zero (SIGFPE), or when it overflows two's-complement arithmetic
+			// (INT_MIN / -1, which also traps on x86). Skipping the fold leaves
+			// a runtime operation in the tree - the VM (and the engine, via
+			// short-circuiting) decides what happens at run time. Consumers that
+			// really require a constant (const initializers, switch labels)
+			// report their usual errors through the not-folded path.
+			case CSCRIPTCOMPILER_OPERATION_DIVIDE:
+			case CSCRIPTCOMPILER_OPERATION_MODULUS:
+				if (right == 0 || (left == -2147483647 - 1 && right == -1))
+					return FALSE;
+				if (pNode->nOperation == CSCRIPTCOMPILER_OPERATION_DIVIDE)
+					result = left / right;
+				else
+					result = left % right;
+				break;
 			// Unary ops
 			case CSCRIPTCOMPILER_OPERATION_BOOLEAN_NOT:         result = !left; break;
 			case CSCRIPTCOMPILER_OPERATION_ONES_COMPLEMENT:     result = ~left; break;
