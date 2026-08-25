@@ -3035,24 +3035,30 @@ int32_t CScriptCompiler::GenerateParseTree()
 			{
 				if (pTopStackReturnNode == NULL)
 				{
-					PARSER_ERROR(STRREF_CSCRIPTCOMPILER_ERROR_FOR_STATEMENT_CANNOT_BE_FOLLOWED_BY_A_NULL_STATEMENT);
-				}
-
-				pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->pLeft = pTopStackReturnNode;
-
-				if (pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_COMPOUND_STATEMENT ||
-				        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_IF_BLOCK ||
-				        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_WHILE_BLOCK ||
-				        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_DOWHILE_BLOCK ||
-				        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_SWITCH_BLOCK ||
-				        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_FOR_BLOCK)
-				{
+					// A null statement (`;`) is a valid empty loop body; Bioware's
+					// own scripts (e.g. nw_pw_peasant9.nss in the OC) rely on it.
+					// Treat it like an empty block: nothing to attach, and the
+					// placeholder statement needs no debug line of its own.
 					pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->nOperation = CSCRIPTCOMPILER_OPERATION_STATEMENT_NO_DEBUG;
 				}
 				else
 				{
-					// It's already a STATEMENT, so set the line correctly.
-					pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->nLine = pTopStackReturnNode->nLine;
+					pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->pLeft = pTopStackReturnNode;
+
+					if (pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_COMPOUND_STATEMENT ||
+					        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_IF_BLOCK ||
+					        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_WHILE_BLOCK ||
+					        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_DOWHILE_BLOCK ||
+					        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_SWITCH_BLOCK ||
+					        pTopStackReturnNode->nOperation == CSCRIPTCOMPILER_OPERATION_FOR_BLOCK)
+					{
+						pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->nOperation = CSCRIPTCOMPILER_OPERATION_STATEMENT_NO_DEBUG;
+					}
+					else
+					{
+						// It's already a STATEMENT, so set the line correctly.
+						pTopStackCurrentNode->pLeft->pRight->pLeft->pRight->pLeft->nLine = pTopStackReturnNode->nLine;
+					}
 				}
 
 				ModifySRStackReturnTree(pTopStackCurrentNode);
