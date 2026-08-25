@@ -1719,6 +1719,14 @@ BOOL CScriptCompiler::ConstantFoldNode(CScriptParseTreeNode *pNode)
 
 	if (pNode->pLeft->nOperation == CSCRIPTCOMPILER_OPERATION_CONSTANT_STRING)
 	{
+		// All the operations we can fold here (ADD, CONDITION_EQUAL,
+		// CONDITION_NOT_EQUAL) are binary, so a missing right operand means
+		// a unary op was applied to a string constant (e.g. `!"foo"`) and
+		// there is nothing to fold. Bail out like the integer/float branches
+		// do; the semantic pass will reject the malformed initializer.
+		if (!pNode->pRight)
+			return FALSE;
+
 		CExoString left = (pNode->pLeft->m_psStringData ? *pNode->pLeft->m_psStringData : CExoString(""));
 		CExoString right = (pNode->pRight->m_psStringData ? *pNode->pRight->m_psStringData : CExoString(""));
 		CExoString result;
