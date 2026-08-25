@@ -527,7 +527,7 @@ int32_t CScriptCompiler::InstallLoader()
 		// It will be restored in CleanUpAfterCompile!
 		m_bOldCompileConditionalFile = m_bCompileConditionalFile;
 
-		nMainIdentifier = GetIdentifierByName("main");
+		nMainIdentifier = GetTopLevelIdentifierByName("main");
 		if (nMainIdentifier >= 0)
 		{
 			// This is a void main() script, and should compile!
@@ -535,7 +535,7 @@ int32_t CScriptCompiler::InstallLoader()
 		}
 		else
 		{
-			nMainIdentifier = GetIdentifierByName("StartingConditional");
+			nMainIdentifier = GetTopLevelIdentifierByName("StartingConditional");
 			if (nMainIdentifier >= 0)
 			{
 				// This is a conditional script, and should compile!
@@ -556,7 +556,7 @@ int32_t CScriptCompiler::InstallLoader()
 
 	if (m_bCompileConditionalFile == FALSE)
 	{
-		nMainIdentifier = GetIdentifierByName("main");
+		nMainIdentifier = GetTopLevelIdentifierByName("main");
 		if (nMainIdentifier < 0)
 		{
 			if (m_bRequireEntryPoint == FALSE)
@@ -581,7 +581,7 @@ int32_t CScriptCompiler::InstallLoader()
 		// If m_bCompileConditionalFile == TRUE, then the only possible choice
 		// for what to compile is int StartingConditional()
 
-		nMainIdentifier = GetIdentifierByName("StartingConditional");
+		nMainIdentifier = GetTopLevelIdentifierByName("StartingConditional");
 		if (nMainIdentifier < 0)
 		{
 			if (m_bRequireEntryPoint == FALSE)
@@ -6013,6 +6013,59 @@ int32_t CScriptCompiler::GetIdentifierByName(const CExoString &sIdentifierName)
 		}
 
 		// Move to the next entry in the list.
+		++nHash;
+		nHash &= CSCRIPTCOMPILER_MASK_SIZE_IDENTIFIER_HASH_TABLE;
+
+	}
+
+	return STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  CScriptCompiler::GetTopLevelIdentifierByName()
+///////////////////////////////////////////////////////////////////////////////
+//  Description:  Like GetIdentifierByName, but only considers identifiers that
+//                were declared in the script being compiled, ignoring anything
+//                pulled in via #include. The entry point (void main() vs.
+//                int StartingConditional()) must be chosen based on the file
+//                the compiler was asked to compile -- this mirrors the original
+//                toolset compiler and fixes scripts whose includes happen to
+//                define a void main() (neverwinter.nim issue #150).
+///////////////////////////////////////////////////////////////////////////////
+int32_t CScriptCompiler::GetTopLevelIdentifierByName(const CExoString &sIdentifierName)
+{
+	BOOL bInfiniteLoop = TRUE;
+	uint32_t nOriginalHash = HashString(sIdentifierName);
+
+	uint32_t nHash = nOriginalHash % CSCRIPTCOMPILER_SIZE_IDENTIFIER_HASH_TABLE;
+	uint32_t nEndHash = nHash + (CSCRIPTCOMPILER_SIZE_IDENTIFIER_HASH_TABLE - 1) & CSCRIPTCOMPILER_MASK_SIZE_IDENTIFIER_HASH_TABLE;
+
+	while (bInfiniteLoop)
+	{
+		if (m_pIdentifierHashTable[nHash].m_nHashValue == nOriginalHash &&
+		        m_pIdentifierHashTable[nHash].m_nIdentifierType == CSCRIPTCOMPILER_HASH_MANAGER_TYPE_IDENTIFIER)
+		{
+			int32_t count = m_pIdentifierHashTable[nHash].m_nIdentifierIndex;
+			if (m_pcIdentifierList[count].m_psIdentifier == sIdentifierName)
+			{
+				if (m_pcIdentifierList[count].m_nFileLevel == 1)
+				{
+					return count;
+				}
+			}
+		}
+
+		if (m_pIdentifierHashTable[nHash].m_nIdentifierType == CSCRIPTCOMPILER_HASH_MANAGER_TYPE_UNKNOWN)
+		{
+			return STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER;
+		}
+
+		if (nEndHash == nHash)
+		{
+			return STRREF_CSCRIPTCOMPILER_ERROR_UNDEFINED_IDENTIFIER;
+		}
+
 		++nHash;
 		nHash &= CSCRIPTCOMPILER_MASK_SIZE_IDENTIFIER_HASH_TABLE;
 

@@ -4483,6 +4483,7 @@ int32_t CScriptCompiler::AddUserDefinedIdentifier(CScriptParseTreeNode *pFunctio
 	if (bFoundIdenticalFunction == FALSE)
 	{
 		m_pcIdentifierList[m_nOccupiedIdentifiers].m_bImplementationInPlace = bFunctionImplementation;
+		m_pcIdentifierList[m_nOccupiedIdentifiers].m_nFileLevel = m_nCompileFileLevel;
 
 		m_pcIdentifierList[m_nOccupiedIdentifiers].m_nBinarySourceStart = -1;
 		m_pcIdentifierList[m_nOccupiedIdentifiers].m_nBinarySourceFinish = -1;

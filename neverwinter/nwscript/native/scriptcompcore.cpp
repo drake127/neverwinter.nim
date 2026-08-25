@@ -75,6 +75,7 @@ CScriptCompilerIdListEntry::CScriptCompilerIdListEntry()
 	m_nIdentifierType = 0;
 	m_nReturnType = 0;
 	m_bImplementationInPlace = FALSE;
+	m_nFileLevel = 0;
 
 	m_nIntegerData = 0;
 	m_fFloatData = 0.0f;

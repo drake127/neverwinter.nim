@@ -710,6 +710,13 @@ public:
     int32_t   m_nReturnType;
     int32_t   m_bImplementationInPlace;
     CExoString m_psStructureReturnName;
+
+    // The compile-file level this identifier was declared at: 0 for predefined
+    // identifiers (the language spec), 1 for the script being compiled, and
+    // >= 2 for #included files. The entry point (void main() vs.
+    // int StartingConditional()) must come from the script itself, never from
+    // an include (see neverwinter.nim issue #150).
+    int32_t   m_nFileLevel;
     //INT   m_nIdentifierOrder;
 
     // For constants ...

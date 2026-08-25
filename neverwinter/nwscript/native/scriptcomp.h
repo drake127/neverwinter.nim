@@ -573,6 +573,7 @@ private:
 	int32_t GetStructureField(const CExoString &sStructureName, const CExoString &sFieldName);
 	int32_t GetStructureSize(const CExoString &sStructureName);
 	int32_t GetIdentifierByName(const CExoString &sIdentifierName);
+	int32_t GetTopLevelIdentifierByName(const CExoString &sIdentifierName);
 
 	BOOL m_bGlobalVariableDefinition;
 	int32_t m_nGlobalVariables;
