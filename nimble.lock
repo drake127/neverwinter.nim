@@ -1,24 +1,12 @@
 {
   "version": 2,
   "packages": {
-    "nim": {
-      "version": "2.2.10",
-      "vcsRevision": "9fe2137fa2f3f66cf5a44f357d461829ac9e20c4",
-      "url": "https://github.com/nim-lang/Nim.git",
-      "downloadMethod": "git",
-      "dependencies": [],
-      "checksums": {
-        "sha1": "17ec440fdb89f8903db29a17898af590087d2b64"
-      }
-    },
     "unittest2": {
       "version": "0.2.5",
       "vcsRevision": "26f2ef3ae0ec72a2a75bfe557e02e88f6a31c189",
       "url": "https://github.com/status-im/nim-unittest2",
       "downloadMethod": "git",
-      "dependencies": [
-        "nim"
-      ],
+      "dependencies": [],
       "checksums": {
         "sha1": "02bb3751ba9ddc3c17bfd89f2e41cb6bfb8fc0c9"
       }
@@ -29,7 +17,6 @@
       "url": "https://github.com/status-im/nim-taskpools",
       "downloadMethod": "git",
       "dependencies": [
-        "nim",
         "unittest2"
       ],
       "checksums": {
@@ -41,9 +28,7 @@
       "vcsRevision": "29450a2063970712422e1ab857695c12d80112a6",
       "url": "https://github.com/nim-lang/db_connector",
       "downloadMethod": "git",
-      "dependencies": [
-        "nim"
-      ],
+      "dependencies": [],
       "checksums": {
         "sha1": "4f2e67d0e4b61af9ac5575509305660b473f01a4"
       }
@@ -53,9 +38,7 @@
       "vcsRevision": "0845c735a9746188b2257ee2cff672eb6ec26e8a",
       "url": "https://github.com/nim-lang/checksums",
       "downloadMethod": "git",
-      "dependencies": [
-        "nim"
-      ],
+      "dependencies": [],
       "checksums": {
         "sha1": "6357ab195ec23e0e0a54d4d8b5e0212456bf899e"
       }
@@ -65,9 +48,7 @@
       "vcsRevision": "66f2458710dc641dd4640368f9483c8a0ec70561",
       "url": "https://github.com/nitely/nim-unicodedb",
       "downloadMethod": "git",
-      "dependencies": [
-        "nim"
-      ],
+      "dependencies": [],
       "checksums": {
         "sha1": "739102d885d99bb4571b1955f5f12aee423c935b"
       }
@@ -78,7 +59,6 @@
       "url": "https://github.com/nitely/nim-regex",
       "downloadMethod": "git",
       "dependencies": [
-        "nim",
         "unicodedb"
       ],
       "checksums": {
@@ -91,7 +71,6 @@
       "url": "https://github.com/docopt/docopt.nim",
       "downloadMethod": "git",
       "dependencies": [
-        "nim",
         "regex"
       ],
       "checksums": {
