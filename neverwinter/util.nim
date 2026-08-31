@@ -6,6 +6,8 @@ import std/[streams, encodings, endians]
 
 proc readStrOrErr*(io: Stream, size: int): string =
   ## Reads a string of exactly size bytes off io, or error out.
+  if size < 0:
+    raise newException(ValueError, "gff field string has negative length " & $size)
   result = io.readStr(size)
   if result.len < size:
     raise newException(IOError, "wanted to read " & $size & " but only got " & $result.len)
